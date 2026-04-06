@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Future<void> _toggleIsDone(Todo todo) async {
       todo.isDone = !todo.isDone;
       await DbHelper.update(todo);
-      _deleteTodo(todo.id!);
+      _loadTodos();
     }
 
     Future<void> _editTodo(Todo todo) async {
