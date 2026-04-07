@@ -33,9 +33,9 @@ static Future<Database> dbInit() async{
     },
   );
 }
-static Future<List<Todo>> fetchAll() async{
+static Future<List<Todo>> fetchAll(String order) async{
   final db = await database;
-  final maps = await db.query(tableName, orderBy: 'id DESC');
+  final maps = await db.query(tableName, orderBy: order);
   return maps.map((m) => Todo.fromMap(m)).toList();
 }
 static Future<int> insert(Todo todo) async {

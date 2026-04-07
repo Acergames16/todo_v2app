@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:todo_v2/todo.model.dart';
 import 'package:todo_v2/dbhelper.dart';
@@ -14,33 +13,32 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
     List<Todo> _todos =[];
     Timer? _timer;
-    
+    String _filter = 'all';
+    bool _fromNewest = true;
+
     @override
     void initState(){
       super.initState();
-      _loadTodos();
-    }
+      _loadTodos();}
+
     @override
     void dispose(){
       _timer?.cancel();
-      super.dispose();
-    }
+      super.dispose();}
 
     void _scheduleNextUpdate(){
       _timer?.cancel();
-       Duration? soonest;
-
-       for(final todo in _todos){
-        if(todo.isDone) continue;
-        
+      Duration? soonest;
+    
+      for(final todo in _todos){
+        if(todo.isDone) continue;  
         final age = DateTime.now().difference(todo.createdAt);
-
         for(final threshold in[
-          const Duration(seconds: 3),
-          const Duration(seconds: 4),
-          const Duration(seconds: 5),
-        ]){
-          if(age<threshold){
+          const Duration(minutes: 3),
+          const Duration(minutes: 4),
+          const Duration(minutes: 5),])
+          { 
+            if(age<threshold){
             final timeUntil = threshold-age;
             if(soonest == null || timeUntil< soonest){
               soonest =timeUntil;
@@ -48,16 +46,16 @@ class _HomeScreenState extends State<HomeScreen> {
             break;
           }
         }
-       }
+      }
       if(soonest == null) return;
-      _timer =Timer(soonest,(){
+      _timer = Timer(soonest,(){
         setState(() {});
         _scheduleNextUpdate();
       });
     }
 
     Future<void> _loadTodos() async {
-      final todos = await DbHelper.fetchAll();
+      final todos = await DbHelper.fetchAll(_fromNewest ? 'id':'id DESC');
       _todos = todos;
       setState(() {});
       _scheduleNextUpdate();
@@ -74,6 +72,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Future<void> _toggleIsDone(Todo todo) async {
       todo.isDone = !todo.isDone;
       await DbHelper.update(todo);
+      _loadTodos();
+    }
+    void _toggleOrder(){
+      _fromNewest = !_fromNewest;
+      setState(() {});
       _loadTodos();
     }
 
@@ -100,14 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }, child: const Text('Update')),
           ],
-
         ));
     }
-    void _deleteWarning(int id){
+
+    void _deleteWarningDialog(int id, String title){
       showDialog(
         context: context, 
         builder: (_) => AlertDialog(
-          title: const Text('Are you sure you wanna delete?'),
+          title: Text("Are you sure you want to delete: '$title' "),
           actions: [
             TextButton(
               onPressed:(){ 
@@ -120,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text ('Delete')),
           ],
         ));
-
     }
 
     Future<void> _showAddDialog() async {
@@ -144,48 +146,87 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }, child: const Text('Add')),
           ],
-
-        ));
+      ));
     }
 
+  List<Todo> get _filteredTodos=> _todos.where((t) => t.matchesFilter(_filter,) ).toList();
+
+  String get messageForEmpty {
+    switch(_filter){
+      case 'active': return 'No active Todos yet.'; 
+      case 'overdue': return 'No overdue todo!';
+      case 'completed' : return 'No done todos yet';
+      default: return 'No todos yet, press + to add.';
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Tasks'),
         centerTitle: false,
+        actions: [
+          IconButton(
+            onPressed: _toggleOrder , 
+            icon: Text(_fromNewest ? 'Oldest to New' : 'Newest to Oldest', style: TextStyle(fontSize: 13),)),
+            SizedBox(width: 16,),
+        ],
+        
       ),
-
-      body: _todos.isEmpty
-      ? Center(child: Text('No Todos yet. Tap  +  to add one.'),)
-      :
-      ListView.builder(
-        itemCount: _todos.length,
-        itemBuilder: (_, i) {
-          final todo = _todos[i];
-
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: ListTile(
-              tileColor: todo.colorState,
-              onTap: () => _editTodo(todo),
-              title: Text(todo.title),
-              subtitle: Text(todo.status),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(onPressed: () => _deleteWarning(todo.id!) , icon: Icon(Icons.remove)),
-                  Checkbox(value: todo.isDone, onChanged:(_) =>  _toggleIsDone(todo)),
-                ],
+      body: Column(
+        children: [
+            _buildFilterBar(),
+          Expanded(
+            child: _filteredTodos.isEmpty
+            ? Center(child: Text(messageForEmpty),)
+            : ListView.builder(
+              itemCount: _filteredTodos.length,
+              itemBuilder: (_, i) =>_buildCard(_filteredTodos[i]),
               ),
-            ),
-          );
-        },
-
-        ), 
+          ),
+        ],
+      ), 
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddDialog ,
           child: Icon(Icons.add),),
     );
   }
+
+  Widget _buildFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: Todo.filters.map((f) {
+          final isSelected = _filter == f;
+          return Padding(
+            padding: const EdgeInsets.only(right: 7),
+            child: ChoiceChip(
+              label: Text(f[0].toUpperCase() + f.substring(1)),
+              selected: isSelected,
+              onSelected: (_) => setState(() => _filter = f),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCard (Todo todo){
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ListTile(
+        tileColor: todo.colorState,
+        onTap: () => _editTodo(todo),
+        title: Text(todo.title),
+        subtitle: Text(todo.status),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(onPressed: () => _deleteWarningDialog(todo.id!,todo.title) , icon: Icon(Icons.delete)),
+            Checkbox(value: todo.isDone, onChanged:(_) =>  _toggleIsDone(todo)),
+              ],
+            ),
+          ),
+        );
+   }
 }
