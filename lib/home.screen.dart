@@ -69,11 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await DbHelper.delete(id);
       _loadTodos();
     }
-    // Future<void> _toggleIsDone(Todo todo) async {
-    //   todo.isDone = !todo.isDone;
-    //   await DbHelper.update(todo);
-    //   _loadTodos();
-    // }
     Future<void> _markAsComplete(Todo todo) async {
       todo.isDone = true;
       await DbHelper.update(todo);
@@ -84,7 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {});
       _loadTodos();
     }
-
+    // Future<void> _toggleIsDone(Todo todo) async {
+    //   todo.isDone = !todo.isDone;
+    //   await DbHelper.update(todo);
+    //   _loadTodos();
+    // }
     Future<void> _editTodo(Todo todo) async {
       final controller = TextEditingController(text: todo.title);
       showDialog(
@@ -176,7 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Text(_fromNewest ? 'Oldest to New' : 'Newest to Oldest', style: TextStyle(fontSize: 13),)),
             SizedBox(width: 16,),
         ],
-        
       ),
       body: Column(
         children: [
