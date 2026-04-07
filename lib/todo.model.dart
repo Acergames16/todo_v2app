@@ -39,13 +39,13 @@ Color get colorState {
   if (isDone) return Colors.white;
   final minutes = DateTime.now().difference(createdAt).inMinutes;
   if (minutes >= 5) {
-    return const Color.fromARGB(255, 250, 115, 105);
+    return Colors.red;
   } else if (minutes >= 4) {
     return Colors.orange;
   } else if (minutes >= 3) {
     return Colors.yellow;
   } else {
-    return const Color.fromARGB(255, 100, 255, 89);
+    return Colors.green;
   }
 }
 

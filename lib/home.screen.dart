@@ -69,8 +69,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await DbHelper.delete(id);
       _loadTodos();
     }
-    Future<void> _toggleIsDone(Todo todo) async {
-      todo.isDone = !todo.isDone;
+    // Future<void> _toggleIsDone(Todo todo) async {
+    //   todo.isDone = !todo.isDone;
+    //   await DbHelper.update(todo);
+    //   _loadTodos();
+    // }
+    Future<void> _markAsComplete(Todo todo) async {
+      todo.isDone = true;
       await DbHelper.update(todo);
       _loadTodos();
     }
@@ -222,8 +227,12 @@ class _HomeScreenState extends State<HomeScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(onPressed: () => _deleteWarningDialog(todo.id!,todo.title) , icon: Icon(Icons.delete)),
-            Checkbox(value: todo.isDone, onChanged:(_) =>  _toggleIsDone(todo)),
+            IconButton(onPressed: () => _deleteWarningDialog(todo.id!,todo.title) , icon: Icon(Icons.delete_outline_sharp)),
+            !todo.isDone  
+            ?TextButton(
+              onPressed: ()=>_markAsComplete(todo), 
+              child:Text('Mark as Done', style: TextStyle(color: Colors.black),) )
+            :Text('Finished', style: TextStyle(),)
               ],
             ),
           ),
